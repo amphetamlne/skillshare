@@ -15,7 +15,8 @@ func (s *Server) ompExtensionsService(w http.ResponseWriter, name string) (*plug
 	service := s.pluginService()
 	target := name
 	switch {
-	case !found:
+	case !found, tc.ProjectRoot() != tc.ProjectOwnerRoot():
+		found = false
 	case tc.ProjectRoot() != "":
 		if _, tool, _ := config.SplitProjectTarget(name); tool == "omp" {
 			service.ProjectRoot, service.Accounts, target = tc.ProjectRoot(), nil, "omp"

@@ -15,7 +15,6 @@ import (
 	"skillshare/internal/resource"
 	"skillshare/internal/skillignore"
 	ssync "skillshare/internal/sync"
-	"skillshare/internal/utils"
 )
 
 // ignorePayload builds the common ignored-skills fields for JSON responses.
@@ -111,18 +110,6 @@ func folderConflicts(targets map[string]config.TargetConfig, isProject bool, def
 	return ssync.TargetFolderConflicts(targets, isProject, defaultMode, harmless)
 }
 
-// projectTargets returns the targets of the project declared under root.
-func (s *Server) projectTargets(root string) map[string]config.TargetConfig {
-	abs := config.ExpandPath(root)
-	targets := map[string]config.TargetConfig{}
-	for name, target := range s.cfg.Targets {
-		if target.ProjectRoot() != "" && utils.PathsEqual(target.ProjectRoot(), abs) {
-			targets[name] = target
-		}
-	}
-	return targets
-}
-
 // syncResources links skills and agents (kind "" means both) into every target,
 // or only the targets of the project declared under project, and logs the sync.
 // A failed target, even when every target fails, is reported in failed and
@@ -131,7 +118,7 @@ func (s *Server) projectTargets(root string) map[string]config.TargetConfig {
 func (s *Server) syncResources(start time.Time, dryRun, force bool, kind, project string) (*syncOutcome, int, error) {
 	targets := s.cfg.Targets
 	if project != "" {
-		targets = s.projectTargets(project)
+		targets = s.cfg.ProjectTargetsFor(project)
 	}
 
 	// Pre-check warnings via shared config validation

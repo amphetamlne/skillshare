@@ -285,6 +285,7 @@ func (c *Config) SharedProjectRoots() []string {
 // SameManagedProject compares declarations while treating omitted and empty lists equally.
 func SameManagedProject(a, b ManagedProject) bool {
 	return a.Name == b.Name && slices.Equal(a.Targets, b.Targets) &&
+		slices.Equal(a.RepositoryDirs, b.RepositoryDirs) &&
 		sameManagedProjectResource(a.Skills, b.Skills) && sameManagedProjectResource(a.Agents, b.Agents)
 }
 

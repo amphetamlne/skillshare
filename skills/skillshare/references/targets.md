@@ -131,6 +131,17 @@ projects:
 
 ### Manage projects with `project`
 
+For a workspace holding separate Git checkouts, set `repository_dirs: [".", ".worktrees"]`
+on its declaration in `config.yaml`. `.` scans ordinary directories below the
+workspace. Name hidden containers such as `.worktrees` explicitly. Discovery stops
+at each checkout, accepts worktree `.git` files, and skips linked directories,
+explicitly registered projects, and checkouts with their own project configuration.
+A discovered checkout receives the same skill
+filters via merge or copy mode. It does not receive agents or MCP servers.
+`skillshare project sync <name> --dry-run` previews the destinations before syncing.
+Git ignore rules are managed separately. Turning discovery off leaves the files
+already distributed to discovered checkouts in place.
+
 ```bash
 skillshare project list --json
 skillshare project show shop-web --json

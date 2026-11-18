@@ -440,6 +440,14 @@
     "note": "List saved skills inside backup version"
   },
   {
+    "file": "internal/config/project_repositories.go",
+    "function": "discoverProjectRepositories",
+    "callee": "filepath.WalkDir",
+    "root": "physicalScan",
+    "reason": "project",
+    "note": "Find checkout roots under opted-in workspace folders, without traversing directory links"
+  },
+  {
     "file": "internal/config/project_reconcile.go",
     "function": "ReconcileProjectAgents",
     "callee": "os.ReadDir",

@@ -177,6 +177,8 @@ type TargetConfig struct {
 	derivedSkills, derivedAgents string `yaml:"-"`
 	// projectRoot marks a target expanded from projects; see expandProjects.
 	projectRoot string `yaml:"-"`
+	// projectOwner is the declaring project for a discovered checkout target.
+	projectOwner string `yaml:"-"`
 }
 
 // TargetInstructionsConfig is a user-set instruction file of a target. Path is

@@ -650,6 +650,7 @@ projects:
   <folder>:                  # absolute, or starting with ~
     name: <name>             # optional, defaults to the folder name
     targets: [<target>, ...] # the tools used in this project
+    repository_dirs: ["."]   # optional, discover additional Git checkouts
     skills:                  # present = sync skills; empty = all of them
       mode: <mode>
       target_naming: <flat|standard|prefixed>
@@ -676,6 +677,17 @@ projects:
 ```
 
 Each entry in `targets` is a [supported target](./supported-targets.md) name. Skillshare writes to that tool's project paths inside the folder, for example `.claude/skills` and `.claude/agents` for `claude`. There is no `path` to set.
+
+`repository_dirs` lets one declaration cover a folder that holds independent Git
+checkouts. Entries are relative to the declared folder and use forward slashes.
+`[".", ".worktrees"]` discovers checkouts in ordinary grouping directories and
+in an explicitly selected hidden worktree directory. Discovery stops at a checkout
+and skips linked directories, checkouts with their own project config, and
+destinations already claimed by explicit targets. Each discovered checkout uses
+the declared skill filters and merge or copy mode. `skillshare project sync
+<name> --dry-run` previews its `<name>/<checkout>@<tool>` targets. Agents, MCP,
+hooks, and Git ignore rules remain separately managed. Removing the discovery
+configuration leaves previously distributed files in place.
 
 - **Shared folders are written once.** Several tools read the same project folder (`cursor` and `codex` both read `.agents/skills`). They become one sync target.
 - **Names in output.** `sync`, `status`, `diff`, `doctor` and `backup` show a project's targets as `<name>@<target>`, for example `shop-web@claude`. `name` cannot contain `@`, `/` or `\`, and two projects cannot share one.

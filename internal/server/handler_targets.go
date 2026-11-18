@@ -113,7 +113,7 @@ func (s *Server) handleListTargets(w http.ResponseWriter, r *http.Request) {
 
 		item := targetItem{
 			Name:         name,
-			Project:      target.ProjectRoot(),
+			Project:      target.ProjectOwnerRoot(),
 			Agent:        target.Agent,
 			ConfigDir:    target.ConfigDir,
 			CLI:          target.CLI,

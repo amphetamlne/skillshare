@@ -10,6 +10,8 @@ import (
 	"slices"
 	"sort"
 	"strings"
+
+	"skillshare/internal/utils"
 )
 
 // ProjectTargetSep joins a project name and a tool into a target name. User-defined
@@ -26,6 +28,8 @@ type ManagedProject struct {
 	// Skills and Agents turn that resource on when present; an empty value syncs all.
 	Skills *ResourceTargetConfig `yaml:"skills,omitempty"`
 	Agents *ResourceTargetConfig `yaml:"agents,omitempty"`
+	// RepositoryDirs optionally discovers additional skills destinations below root.
+	RepositoryDirs []string `yaml:"repository_dirs,omitempty"`
 }
 
 // ProjectTargetName returns the target name of one tool in a project.
@@ -44,6 +48,21 @@ func SplitProjectTarget(name string) (project, tool string, ok bool) {
 
 // ProjectRoot is the folder a project target writes into, or "" for an ordinary target.
 func (tc TargetConfig) ProjectRoot() string { return tc.projectRoot }
+
+// ProjectOwnerRoot identifies the declaration that owns this target.
+func (tc TargetConfig) ProjectOwnerRoot() string { return cmp.Or(tc.projectOwner, tc.projectRoot) }
+
+// ProjectTargetsFor returns the targets owned by the declared project at root.
+func (c *Config) ProjectTargetsFor(root string) map[string]TargetConfig {
+	root = filepath.Clean(expandPath(root))
+	targets := map[string]TargetConfig{}
+	for name, target := range c.Targets {
+		if target.ProjectOwnerRoot() != "" && utils.PathsEqual(filepath.Clean(target.ProjectOwnerRoot()), root) {
+			targets[name] = target
+		}
+	}
+	return targets
+}
 
 // ProjectName returns the effective name of the project declared under root.
 func (p ManagedProject) ProjectName(root string) string {
@@ -156,40 +175,61 @@ func (c *Config) expandProjects() error {
 		if info, err := os.Stat(abs); err != nil || !info.IsDir() {
 			continue
 		}
-		if project.Skills == nil && project.Agents == nil {
-			continue
+		c.addProjectTargets(name, abs, "", project.Skills, project.Agents, groups)
+	}
+	// Discover only after all explicit destinations have claimed their folders.
+	var workspaces []string
+	for root, project := range c.Projects {
+		if len(project.RepositoryDirs) != 0 {
+			workspaces = append(workspaces, root)
 		}
-		for _, group := range groups {
-			if project.Skills == nil && group.AgentsPath == "" {
-				continue
+	}
+	if len(workspaces) != 0 {
+		reserved := c.reservedRepositoryRoots()
+		occupied := map[string]bool{}
+		for _, target := range c.Targets {
+			if path := skillsFolder(target); path != "" {
+				occupied[skillFolderIdentity(path)] = true
 			}
-			// ponytail: every target syncs skills, so an agents-only project excludes
-			// them all and is left with an empty skills folder. Teach the sync loops
-			// to skip skills if that folder ever matters.
-			// It syncs no skill, so it takes a naming every mode accepts rather than inherit one.
-			skills := ResourceTargetConfig{Exclude: []string{"*"}, TargetNaming: "flat"}
-			if project.Skills != nil {
-				skills = *project.Skills
+		}
+		slices.Sort(workspaces)
+		for _, root := range workspaces {
+			project := c.Projects[root]
+			if err := c.addRepositoryTargets(expandPath(root), project.ProjectName(root), project, reserved, occupied); err != nil {
+				return err
 			}
-			skills.Path = group.SkillsPath
-			target := TargetConfig{Skills: &skills, projectRoot: abs, defaultTargetNaming: c.TargetNaming}
-			if len(group.Tools) > 1 {
-				for _, tool := range group.Tools {
-					target.sharedSkillTargets = append(target.sharedSkillTargets, SkillTargetIdentity{Name: ProjectTargetName(name, tool)})
-				}
-			}
-			if project.Agents != nil && group.AgentsPath != "" {
-				agents := *project.Agents
-				agents.Path = group.AgentsPath
-				target.Agents = &agents
-			}
-			if c.Targets == nil {
-				c.Targets = map[string]TargetConfig{}
-			}
-			c.Targets[ProjectTargetName(name, group.Target())] = target
 		}
 	}
 	return nil
+}
+
+func (c *Config) addProjectTargets(name, root, owner string, skillConfig, agentConfig *ResourceTargetConfig, groups []ProjectToolGroup) {
+	for _, group := range groups {
+		if skillConfig == nil && (agentConfig == nil || group.AgentsPath == "") {
+			continue
+		}
+		// An agents-only target selects no skills and uses a naming compatible with all modes.
+		skills := ResourceTargetConfig{Exclude: []string{"*"}, TargetNaming: "flat"}
+		if skillConfig != nil {
+			skills = *skillConfig
+		}
+		skills.Path = group.SkillsPath
+		target := TargetConfig{Skills: &skills, projectRoot: root, projectOwner: owner, defaultTargetNaming: c.TargetNaming}
+		if len(group.Tools) > 1 {
+			for _, tool := range group.Tools {
+				target.sharedSkillTargets = append(target.sharedSkillTargets, SkillTargetIdentity{Name: ProjectTargetName(name, tool)})
+			}
+		}
+		if agentConfig != nil && group.AgentsPath != "" {
+			agents := *agentConfig
+			agents.Path = group.AgentsPath
+			target.Agents = &agents
+		}
+		if c.Targets == nil {
+			c.Targets = map[string]TargetConfig{}
+		}
+		c.Targets[ProjectTargetName(name, group.Target())] = target
+	}
 }
 
 // OwnTargets returns the targets declared under targets, without the project ones.

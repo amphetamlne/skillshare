@@ -22,7 +22,8 @@ func (s *Server) piExtensionsService(w http.ResponseWriter, name string) (*plugi
 	service := s.pluginService()
 	target := name
 	switch {
-	case !found:
+	case !found, tc.ProjectRoot() != tc.ProjectOwnerRoot():
+		found = false
 	case tc.ProjectRoot() != "":
 		// A project of the global config, named <project>@pi.
 		if _, tool, _ := config.SplitProjectTarget(name); tool == "pi" {

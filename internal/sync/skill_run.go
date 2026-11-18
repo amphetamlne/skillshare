@@ -63,6 +63,10 @@ type SkillTargetResult struct {
 // prunes orphans left by earlier syncs. It prints nothing and writes no oplog.
 func SyncSkillTarget(t SkillTarget, skills []DiscoveredSkill, opts SkillRunOptions) SkillTargetResult {
 	res := SkillTargetResult{Name: t.Name, Mode: t.Mode}
+	if err := t.Target.ValidateDiscoveredSkillsPath(); err != nil {
+		res.Err = err
+		return res
+	}
 	sc := t.Target.SkillsConfig()
 
 	switch t.Mode {

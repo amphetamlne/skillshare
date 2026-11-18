@@ -141,7 +141,10 @@ func (s *Server) handleSaveProject(w http.ResponseWriter, r *http.Request) {
 		}
 		root = body.Root
 	}
-	result, err := s.projectService().Put(root, config.ManagedProject{Name: body.Name, Targets: body.Targets, Skills: body.Skills.config(), Agents: body.Agents.config()}, projects.PutOptions{Create: body.Create, Storage: body.Storage})
+	entry := s.cfg.Projects[root]
+	entry.Name, entry.Targets = body.Name, body.Targets
+	entry.Skills, entry.Agents = body.Skills.config(), body.Agents.config()
+	result, err := s.projectService().Put(root, entry, projects.PutOptions{Create: body.Create, Storage: body.Storage})
 	if err != nil {
 		status := http.StatusBadRequest
 		switch {

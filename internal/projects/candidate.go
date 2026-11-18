@@ -51,6 +51,7 @@ func cloneProjects(projects map[string]config.ManagedProject) map[string]config.
 	cloned := make(map[string]config.ManagedProject, len(projects))
 	for root, p := range projects {
 		p.Targets = slices.Clone(p.Targets)
+		p.RepositoryDirs = slices.Clone(p.RepositoryDirs)
 		p.Skills = cloneProjectResource(p.Skills)
 		p.Agents = cloneProjectResource(p.Agents)
 		cloned[root] = p

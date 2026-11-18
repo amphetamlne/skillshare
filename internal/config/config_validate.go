@@ -97,6 +97,12 @@ func validateGlobalTarget(name string, target TargetConfig, globalMode, globalNa
 		return append(problems, fmt.Sprintf("invalid target naming %q (valid: %s)", sc.TargetNaming, strings.Join(ValidTargetNamings, ", ")))
 	}
 	naming, mode := cmp.Or(sc.TargetNaming, globalNaming), cmp.Or(sc.Mode, globalMode)
+	if target.projectOwner != "" && mode == "symlink" {
+		problems = append(problems, "discovered repository skills require merge or copy mode")
+	}
+	if err := target.ValidateDiscoveredSkillsPath(); err != nil {
+		problems = append(problems, err.Error())
+	}
 	// Skills off syncs no skill, and the target's agents must still sync.
 	if err := TargetNamingModeConfigError(naming, mode, target.ProjectRoot()); err != nil && sc.IsEnabled() {
 		problems = append(problems, err.Error())

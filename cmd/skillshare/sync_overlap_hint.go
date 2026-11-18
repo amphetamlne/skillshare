@@ -45,6 +45,10 @@ func printSyncFolderConflicts(conflicts []config.SkillsFolderConflict, rest int,
 // project's only target.
 func skillsOffCommand(name string, isProject bool, targets map[string]config.TargetConfig, projects map[string]config.ManagedProject) string {
 	if project, _, ok := config.SplitProjectTarget(name); ok && !isProject {
+		target := targets[name]
+		if target.ProjectOwnerRoot() != target.ProjectRoot() {
+			return "skillshare project show " + shellArg(target.ProjectOwnerRoot())
+		}
 		cmd, ok := projectTargetOffCommand(name, targets, projects)
 		if !ok {
 			// Without the registration, list the project's targets to choose from.

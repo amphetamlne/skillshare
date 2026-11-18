@@ -21,15 +21,16 @@ type Item struct {
 	Origin     string `json:"origin"`
 	OriginPath string `json:"originPath"`
 	// SharedCopy marks a local project that config.yaml also declares.
-	SharedCopy   bool      `json:"sharedCopy"`
-	Root         string    `json:"root"` // as written in config.yaml
-	Path         string    `json:"path"` // absolute
-	Name         string    `json:"name"`
-	CustomName   string    `json:"customName,omitempty"`
-	Targets      []string  `json:"targets"`
-	Skills       *Resource `json:"skills"`
-	Agents       *Resource `json:"agents"`
-	Groups       []Group   `json:"groups"`
-	Missing      bool      `json:"missing"`
-	HasOwnConfig bool      `json:"hasOwnConfig"`
+	SharedCopy     bool      `json:"sharedCopy"`
+	Root           string    `json:"root"` // as written in config.yaml
+	Path           string    `json:"path"` // absolute
+	Name           string    `json:"name"`
+	CustomName     string    `json:"customName,omitempty"`
+	Targets        []string  `json:"targets"`
+	RepositoryDirs []string  `json:"repositoryDirs,omitempty"`
+	Skills         *Resource `json:"skills"`
+	Agents         *Resource `json:"agents"`
+	Groups         []Group   `json:"groups"`
+	Missing        bool      `json:"missing"`
+	HasOwnConfig   bool      `json:"hasOwnConfig"`
 }

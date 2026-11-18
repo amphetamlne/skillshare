@@ -13,7 +13,6 @@ import (
 	"skillshare/internal/install"
 	"skillshare/internal/projects"
 	ssync "skillshare/internal/sync"
-	"skillshare/internal/utils"
 )
 
 // projectResult is a project operation and the sync it ran, if any.
@@ -48,14 +47,7 @@ func syncProject(cfg *config.Config, root string, dryRun bool) (*ssync.ExecuteRe
 		return &ssync.ExecuteResult{}, nil
 	}
 
-	name := entry.ProjectName(root)
-	targets := map[string]config.TargetConfig{}
-	for target, tc := range cfg.Targets {
-		project, _, isProject := config.SplitProjectTarget(target)
-		if isProject && project == name && tc.ProjectRoot() != "" && utils.PathsEqual(tc.ProjectRoot(), abs) {
-			targets[target] = tc
-		}
-	}
+	targets := cfg.ProjectTargetsFor(root)
 
 	// A target with invalid settings fails alone, as in `skillshare sync`.
 	warnings, invalid, err := config.ValidateConfigForSync(cfg)

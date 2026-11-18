@@ -58,6 +58,39 @@ func TestProjects_CollectLeavesAProjectsOwnSkills(t *testing.T) {
 	}
 }
 
+func TestProjects_SyncDiscoveredRepositorySkills(t *testing.T) {
+	sb, root := projectsSandbox(t, "    targets: [codex]\n    skills: {include: [team-*]}\n    repository_dirs: [\".\"]\n")
+	defer sb.Cleanup()
+	checkout := filepath.Join(root, "services", "worker")
+	gitInit(t, checkout, false)
+	other := filepath.Join(sb.Home, "other")
+	gitInit(t, other, false)
+	localSkill := filepath.Join(checkout, ".agents", "skills", "local-only", "SKILL.md")
+	sb.WriteFile(localSkill, "---\nname: local-only\n---\n")
+	target := filepath.Join(checkout, ".agents", "skills", "team-lint", "SKILL.md")
+
+	preview := sb.RunCLI("project", "sync", "app", "--dry-run", "--json")
+	preview.AssertSuccess(t)
+	preview.AssertOutputContains(t, "app/services/worker@codex")
+	if sb.FileExists(target) {
+		t.Fatal("preview wrote into the checkout")
+	}
+	sb.RunCLI("project", "sync", "app", "--json").AssertSuccess(t)
+	if !sb.FileExists(target) || !sb.FileExists(localSkill) {
+		t.Fatal("sync did not install the shared skill and retain the existing skill")
+	}
+	if sb.FileExists(filepath.Join(other, ".agents")) || sb.FileExists(filepath.Join(checkout, ".agents", "skills", "draft")) {
+		t.Fatal("sync exceeded the workspace or skill filter")
+	}
+
+	newCheckout := filepath.Join(root, "services", "new")
+	gitInit(t, newCheckout, false)
+	sb.RunCLI("sync", "--json").AssertSuccess(t)
+	if !sb.FileExists(filepath.Join(newCheckout, ".agents", "skills", "team-lint", "SKILL.md")) {
+		t.Fatal("global sync did not discover the new checkout")
+	}
+}
+
 func TestProjects_TargetCommandDoesNotSeeProjectTargets(t *testing.T) {
 	sb, _ := projectsSandbox(t, "    targets: [claude]\n    skills: {}\n")
 	defer sb.Cleanup()

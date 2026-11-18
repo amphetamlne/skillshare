@@ -311,6 +311,13 @@
           "uniqueItems": true,
           "examples": [["claude", "codex"]]
         },
+        "repository_dirs": {
+          "type": "array",
+          "description": "Optional project-relative, slash-separated directories to search for Git checkouts. Discovered checkouts inherit the project's skills settings. Use '.' to search the project and list hidden worktree containers explicitly.",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true,
+          "examples": [[".", ".worktrees"]]
+        },
         "skills": {
           "type": "object",
           "description": "Send skills into this project. An empty value sends all of them.",

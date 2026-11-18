@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 	"skillshare/internal/config"
@@ -78,6 +77,7 @@ func item(root string, p config.ManagedProject) Item {
 	abs := config.ExpandPath(root)
 	_, own := projectdir.Find(abs)
 	v := Item{Root: root, Path: abs, Name: p.ProjectName(root), CustomName: p.Name, Targets: append([]string{}, p.Targets...), Skills: resource(p.Skills), Agents: resource(p.Agents), Groups: []Group{}, HasOwnConfig: own}
+	v.RepositoryDirs = slices.Clone(p.RepositoryDirs)
 	if info, err := os.Stat(abs); err != nil || !info.IsDir() {
 		v.Missing = true
 	}
@@ -262,15 +262,9 @@ func enabledSkillTargets(cfg *config.Config) map[string]config.TargetConfig {
 		if !target.SkillsConfig().IsEnabled() {
 			continue
 		}
-		if target.ProjectRoot() != "" {
-			enabled := false
-			for root, p := range cfg.Projects {
-				if utils.PathsEqual(filepath.Clean(config.ExpandPath(root)), filepath.Clean(target.ProjectRoot())) && strings.HasPrefix(name, p.ProjectName(root)+config.ProjectTargetSep) {
-					enabled = p.Skills != nil && p.Skills.IsEnabled()
-					break
-				}
-			}
-			if !enabled {
+		if target.ProjectOwnerRoot() != "" {
+			root, ok := cfg.ProjectKey(target.ProjectOwnerRoot())
+			if !ok || cfg.Projects[root].Skills == nil {
 				continue
 			}
 		}
